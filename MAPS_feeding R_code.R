@@ -441,7 +441,7 @@ scatterplot3d(stat.d[,1:3], color=stat.d$color, main="1.MOM=red,4. HDM=purple, 5
 
 
 # Jaccard
-nms <- metaMDS(otu.f, dist="jaccard", k=3, trymax=250, wascores=TRUE, trymin=50)
+nms <- metaMDS(otu.f, dist="jaccard", k=3, trymax=800, wascores=TRUE, trymin=50)
 stressplot(nms)
 stat <- data.frame(nms$points)
 stat$Fecal_Sample_ID <- rownames(stat)
@@ -488,8 +488,9 @@ br_dist <- vegdist(otu.f, method="bray")
 str(br_dist)
 
 # permanova for feeding
-br_perm <- adonis(br_dist ~ft$PNA+ ft$Numbers.of.antibiotic+ ft$BIrth_GA+ ft$PROM+ ft$mo*ft$Gender, na.rm=TRUE, permutations=999,strata=factor(ft$Subject_ID))
-betadisper(br_dist, ft$mo)
+br_perm <- adonis(br_dist ~ft$PNA+ ft$Numbers.of.antibiotic+ ft$BIrth_GA+ ft$PROM+ ft$mo*ft$Gender, na.rm=TRUE, sqrt.dist=TRUE, permutations=99999,strata=factor(ft$Subject_ID))
+br_perm
+
 
 ## Calculation of jaccard dissimilarity
 jac_dist <- vegdist(otu.f, method="jaccard")
@@ -499,17 +500,6 @@ str(jac_dist)
 adonis(jac_dist ~ft$PNA+ ft$Numbers.of.antibiotic+ ft$BIrth_GA+ ft$PROM+ ft$mo*ft$Gender, na.rm=TRUE, permutations=999,strata=factor(ft$Subject_ID))
 betadisper(jac_dist, ft$mo)
 
-####power, significance level calculations with HMP ###not right yet
-library(HMP)
-fit.otu <- DM.MoM(otu.f)
-MC <- 1000
-Nrs1 <- rep(12000, 10)
-Nrs2 <- rep(12000, 20)
-Nrs3 <- rep(12000, 60)
-group.Nrs <- list(Nrs1, Nrs2, Nrs3)
-mc.xdc_check1 <- MC.Xdc.statistics(group.Nrs, MC, fit.otu$gamma, 3,  .05)
-
-mc.xdc_check2
 
 
 ### pairwise permanova
