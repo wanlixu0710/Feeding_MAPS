@@ -216,6 +216,7 @@ feeding$day[feeding$PNA> 20 &feeding$PNA <= 30] <- "3rd 10 days"
 count <- read.csv(file="count.for.upload.csv", sep=",", header=T)
 
 c <- select(count, Subject_ID, day, ten.days.fed)
+
 a.div2 <- a.div 
 a.div2$PNA <- as.numeric(as.character(a.div$PNA))
 
@@ -228,6 +229,7 @@ a.div.30 <- inner_join(a.div.30, c)
 a.div.30$subject.recode <- revalue(as.character(a.div.30$Subject_ID),  c("1"="A", "2"="B","3"="C","4"="D","5"="E","6"="F", "7"="G","8"="H","9"="I","10"="J","11"="K","12"="L", "13"="M","14"="N","15"="O","16"="P","18"="Q","19"="R","20"="S","21"="T","22"="U","23"="V","24"="W","25"="X", "26"="Y","27"="Z","28"="ZA","29"="ZB","30"="ZC", "35"="ZD","36"="ZE","40"="ZF", "41"="ZG"))
 
 a.div.30$mo <- revalue(as.character(a.div.30$ten.days.fed), c("1"="1.MOM", "2"="4. HDM", "3"="5.Formula", "4"='2.MOM+HDM', "5"="3.MOM+Formula", "6"="6.HDM+Formula"))
+
 
 a.div.30 <- a.div.30 %>% filter(!is.na(a.div.30$ten.days.fed))
 SPG1 <-ggplot (a.div.30, aes(x=subject.recode,y=PNA,colour=simpson))+geom_point(size=5)+scale_colour_gradient(low="green", high="blue")+labs(x="Infant", y="Postnatal age (day)", colour="Simpson",title="Gini-Simpson Index for feeding types")+facet_grid(day~mo, scales = "free",shrink=T, space = "free")+scale_y_continuous ( breaks=1:30)+ theme_bw() #theme(axis.title.y = element_text(vjust=-5))+#scale_x_continuous (breaks=1:29)
@@ -533,7 +535,25 @@ PW.Adonis
 pairwise.adonis(otu.f,ft$mo,sim.method="jaccard",p.adjust.m = "bonferroni")
 
 
+### check the number of participants for each category that are used in the data analysis
+c <- a.div.30 %>% select(Subject_ID, day, mo) %>%unique()
+a <- c %>% filter(Subject_ID %in% a.div.30$Subject_ID) %>% filter( day=="1st 10 days") 
+a %>% group_by(mo) %>% tally()
+a <- c %>% filter(Subject_ID %in% a.div.30$Subject_ID) %>% filter( day=="2nd 10 days")
+a %>% group_by(mo) %>% tally()
+a <- c %>% filter(Subject_ID %in% a.div.30$Subject_ID) %>% filter( day=="3rd 10 days")
+a %>% group_by(mo) %>% tally()
 
+### check the number of participants for each category that of all of the feedings for the 33 babies
+c <- count %>% select(Subject_ID, day, ten.days.fed) %>%unique()
+c$mo <- revalue(as.character(c$ten.days.fed), c("1"="1.MOM", "2"="4. HDM", "3"="5.Formula", "4"='2.MOM+HDM', "5"="3.MOM+Formula", "6"="6.HDM+Formula"))
+a <- c %>% filter(Subject_ID %in% a.div.30$Subject_ID) %>% filter( day=="1st 10 days")
+a %>% group_by(mo) %>% tally()
+a <- c %>% filter(Subject_ID %in% a.div.30$Subject_ID) %>% filter( day=="2nd 10 days")
+a %>% group_by(mo) %>% tally()
+a <- c %>% filter(Subject_ID %in% a.div.30$Subject_ID) %>% filter( day=="3rd 10 days") 
+a %>% group_by(mo) %>% tally()
+setdiff (a.div.30$Subject_ID, a$Subject_ID)
 
 
 
