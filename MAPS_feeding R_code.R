@@ -46,7 +46,7 @@ noDNA <- noDNA[!duplicated(noDNA),]
 noDNA <- filter(noDNA,  as.numeric(as.character(PNA))<31)
 meconium <- filter(noDNA, as.numeric(as.character(PNA))<7) # I count any stool that is less than 7 days old meconium, so we have 9 meconium
 reads30.a <- reads30 %>% select(Daily_Code,Subject_ID, PNA) %>% distinct() 
-totalsample <- rbind(reads30[, c("Daily_Code","count","Subject_ID","PNA")],noDNA)
+totalsample <- rbind(reads30[, c("Daily_Code","count","Subject_ID","PNA")],noDNA) # totally 419 samples
 
 count <- totalsample %>% group_by(Subject_ID) %>% tally () #average  stool collection
 summary(count)
@@ -66,6 +66,37 @@ lessthan10thousands <- filter(reads30, count<10000)
 # get rid of the sequences that is less than 10000
 reads30 <- reads30 %>% filter(count>=10000)
 reads30 <- reads30[reads30$Fecal_Sample_ID_OLD!="Baby.021.E1",]
+
+### demographic data
+demo <- read.csv(file="MAPS demographic data_3_11_16.csv",sep=",", header=T)
+str(demo)
+demo2 <- demo%>% filter(demo$Subject_ID %in% reads30$Subject_ID)
+table(demo2$Gender) #17/33
+table(demo2$Baby_Race) #26/33
+table(demo2$Baby_hispanic) #22/33
+table(demo2$Delivery) #20/33
+table(demo2$PROM)
+table(demo2$Twins)
+table(demo2$Resuscitation_1.yes_2.no)
+summary(demo2$BIrth_GA)
+sd(demo2$BIrth_GA)
+summary(demo2$Birth_weight)
+sd(demo2$Birth_weight)
+summary(demo2$Birth_length)
+sd(demo2$Birth_length)
+summary(demo2$Birth_head_circumference)
+sd(demo2$Birth_head_circumference, na.rm=T)
+summary(demo2$SNAPEII)
+sd(demo2$SNAPEII, na.rm=T )
+summary(demo2$Mother_age)
+sd(demo2$Mother_age)
+# antibiotic use
+anti <- read.csv(file="Daily_antibiotic.40.50.csv",stringsAsFactors = F)
+anti.30 <- anti %>% filter(anti$Subject_ID %in% reads30$Subject_ID) %>% filter(PNA<=30)
+setdiff( reads30$Subject_ID, anti.30$Subject_ID)
+count <- anti.30%>%count(Subject_ID)#26 out of 33 infants have antibiotic use, but baby #40 doesn't have antibiotics during the first 3 days. there for 25 have antibiotics during the first 3 days.
+25/33
+
 ### descriptives for feeding
 feeding <- read.csv(file="feeding_first_50.csv", sep=",", header=T)
 firstfeeding <- demo2%>%select(Subject_ID, DOB, First_enteral_feeding)%>%mutate(fed=as.Date(First_enteral_feeding, "%m/%d/%Y")-as.Date(DOB, "%m/%d/%Y")+1)
@@ -75,7 +106,7 @@ sd((as.numeric(firstfeeding$fed)))
 MBM <- feeding %>% filter(feeding$Subject_ID %in% reads30$Subject_ID & feeding$PNA<31) %>% mutate(mbm=MBM/(MBM+DBM+Formula+NPO)) %>% select(Subject_ID,PNA,MBM,mbm) #percentage of the MBM
 summary(MBM$mbm) # 63.5% of the total feedings 
 
-# MOM for each infant varies from 0 to 30 days (17.7 ± 7.9 days)
+# MOM for each infant varies from 0 to 28 days (17.7 ± 7.9 days)
 MBM1 <- MBM %>% filter(MBM$MBM==1) %>% select(Subject_ID, PNA, MBM) %>% distinct () %>% group_by (Subject_ID) %>% tally()
 setdiff(MBM$Subject_ID, MBM1$Subject_ID)
 Subject_ID <- 7
@@ -100,37 +131,6 @@ NPO.first <- data.frame (Subject_ID, n)
 NPO <- rbind(NPO, NPO.first)
 summary(NPO)
 sd(NPO$n)
-
-### demographic data
-demo <- read.csv(file="MAPS demographic data_3_11_16.csv",sep=",", header=T)
-str(demo)
-demo2 <- demo%>% filter(demo$Subject_ID %in% reads30$Subject_ID)
-table(demo2$Gender) #17/33
-table(demo2$Baby_Race) #26/32
-table(demo2$Baby_hispanic) #22/33
-table(demo2$Delivery) #20/33
-table(demo2$PROM)
-table(demo2$Twins)
-table(demo2$Resuscitation_1.yes_2.no)
-summary(demo2$BIrth_GA)
-sd(demo2$BIrth_GA)
-summary(demo2$Birth_weight)
-sd(demo2$Birth_weight)
-summary(demo2$Birth_length)
-sd(demo2$Birth_length)
-summary(demo2$Birth_head_circumference)
-sd(demo2$Birth_head_circumference, na.rm=T)
-summary(demo2$SNAPEII)
-sd(demo2$SNAPEII, na.rm=T )
-summary(demo2$Mother_age)
-sd(demo2$Mother_age)
-# antibiotic use
-anti <- read.csv(file="Daily_antibiotic.40.50.csv",stringsAsFactors = F)
-anti.30 <- anti %>% filter(anti$Subject_ID %in% a$Subject_ID) %>% filter(PNA<=30)
-setdiff( a$Subject_ID, anti.30$Subject_ID)
-count <- anti.30%>%count(Subject_ID)#26 out of 33 infants have antibiotic use, but baby #40 doesn't have antibiotics during the first 3 days. there for 25 have antibiotics during the first 3 days.
-25/33
-
 
 
 ############ Data analysis ###################
@@ -240,16 +240,17 @@ SPG2
 SPG3 <-ggplot (a.div.30, aes(x=PNA,y=simpson,colour=mo)) + geom_point(aes(color= mo, shape= mo, alpha=0.7)) + stat_summary(aes(colour= mo ,shape= mo ,group=mo), fun.y=mean, geom="line", size=1.5) + labs(x="Postnatal Day (PNA)", y="Gini-Simpson Diversity Index", colour="Feeding Group", title="Gini-Simpson Index for feeding types")+ facet_grid(~day, scales = "free_x",shrink=T, space = "free_x")+  scale_x_continuous (breaks=1:30)+ scale_color_manual(values=c("#004E00", "#33FF00", "#FF9966", "#3399FF", "#FF004C","#BCBDDC")) + theme(axis.text.x = element_text(angle = 45)) #theme(axis.title.y = element_text(vjust=-5))
 SPG3
 
+
 a.div.30$Feeding_type <- as.factor(a.div.30$mo)
 a.div.30$meansimp <- ave(a.div.30$simpson, by=list (a.div.30$Subject_ID,a.div.30$day), FUN= mean)
 fig1 <- ggplot(a.div.30,  aes( y=simpson, x=mo))+ #order=- makes the stack the same order as the legend
   geom_boxplot(alpha=0.5, aes(fill = Feeding_type))+
   scale_x_discrete()+
-  labs(x="X-axis: Feeding types", y="Y-axis: Gini-Simpson Index",
-       title="Gini-Simpson Index by different feeding type")+
+  labs(x="Feeding types", y="Gini-Simpson Diversity Index")+
   facet_grid(~day,shrink=T, space = "free")+
-  theme(axis.text.x = element_text(angle = 45), plot.background= element_rect(fill=NULL, colour = NULL))
+  theme(axis.text.x = element_text(angle = 45), plot.background= element_rect(fill=NULL, colour = NULL))+theme_bw()
 fig1
+
 
 
 ### TAXA
@@ -325,19 +326,18 @@ feeding.plot3 <- ggplot(order3,  aes( y=as.numeric(value), x=factor(day), color=
   geom_bar(position="fill", stat="identity")+
   scale_fill_manual(values=order.color)+
   scale_x_discrete()+
-  labs(x="X-axis: Feeding types", y="Y-axis: Order level of bacteria (Percentage)",
-       caption="Infants Taxonomy")+
+  labs(x="Feeding types (number of specimens)", y="Relative abundance %")+
   facet_grid(~mo,shrink=T, space = "free")+
   theme(axis.text.x = element_text(angle = 45))#+
 #theme_bw()
 feeding.plot3
 
 ### bifido boxplot
-L4.2 <- inner_join(L4[,c("Fecal_Sample_ID","Bifidobacteriales","Lactobacillales")], a.div.30[,c("Fecal_Sample_ID", "mo","day")])
-bifido.plot <- ggplot(L4.2,  aes( y=as.numeric(Bifidobacteriales), x=factor(day)))+ geom_boxplot()+labs(x="X-axis: Feeding types", y="Y-axis: Bifidobacteriales (Percentage)")+facet_grid(~mo,shrink=T, space = "free")+theme(axis.text.x = element_text(angle = 45));bifido.plot
+L4.2 <- inner_join(L4[,c("Fecal_Sample_ID","Bifidobacteriales","Lactobacillales")], a.div.30[,c("Fecal_Sample_ID", "mo","day","Feeding_type")])
+bifido.plot <- ggplot(L4.2,  aes( y=as.numeric(Bifidobacteriales), x=factor(day)))+ geom_boxplot()+labs(x= "Feeding types", y="Relative abundance (%) of Bifidobacteriales")+facet_grid(~mo,shrink=T, space = "free")+theme(axis.text.x = element_text(angle = 45));bifido.plot
 
 ### lacto boxplot
-lacto.plot <- ggplot(L4.2,  aes( y=as.numeric(Lactobacillales), x=factor(day)))+ geom_boxplot()+labs(x="X-axis: Feeding types", y="Y-axis: Lactobacillales (Percentage)")+facet_grid(~mo,shrink=T, space = "free")+theme(axis.text.x = element_text(angle = 45));lacto.plot
+lacto.plot <- ggplot(L4.2,  aes( y=as.numeric(Lactobacillales), x=factor(day)))+ geom_boxplot()+labs(x="Feeding types", y="Relative abundance (%) of Lactobacillales")+facet_grid(~mo,shrink=T, space = "free")+theme(axis.text.x = element_text(angle = 45));lacto.plot
 
 ##############fig 2##########typical individual plot##########
 L4 <- read.csv(file="even_table_L4.csv", header=T, sep=",")
@@ -389,7 +389,7 @@ fig2 <- ggplot(ord2,  aes( y=as.numeric(value), x=factor(PNA), color=NULL, fill=
   geom_bar(position="fill", stat="identity")+
   scale_fill_manual(values=order.color)+
   scale_x_discrete()+
-  xlab("X-axis: Postnatal Age (day)")+ ylab("Y-axis: Order level of bacteria (Percentage)")+
+  xlab("Postnatal Age (day)")+ ylab("Relative abundance %")+
   facet_wrap(~infant.rename,scales = "free_x",shrink=T,  ncol=2)+
   theme_bw()
 fig2
@@ -405,6 +405,7 @@ otu <- inner_join(map,otu)
 otu <- otu[,-c(1:5)]
 # recode feeding type to one variable
 #FT <- a.div.30[, c("Fecal_Sample_ID", "infant.fed.70","PNA")]
+
 FT <- select(a.div.30, Fecal_Sample_ID, mo, ten.days.fed, subject.recode, Gender)
 FT$ten.days.fed <- as.character(FT$ten.days.fed)
 FT <- inner_join(FT,otu)
@@ -416,10 +417,12 @@ ft<- FT[,(1:6)]
 # assign Fecal_Sample_ID as the otu row name
 rownames(otu.f) <- ft[,c("Fecal_Sample_ID")]
 # indicator species
-FT  <-  multipatt(otu.f, ft$mo,
+FT.ind  <-  multipatt(otu.f, ft$mo,
                   control = how(nperm=350))
-levels(ft$FT)
-summary(FT)
+levels(ft$FT.ind)
+summary(FT.ind)
+
+
 
 
 ################################ beta-diversity #######################################
@@ -488,7 +491,7 @@ br_dist <- vegdist(otu.f, method="bray")
 str(br_dist)
 
 # permanova for feeding
-br_perm <- adonis(br_dist ~ft$PNA+ ft$Numbers.of.antibiotic+ ft$BIrth_GA+ ft$PROM+ ft$mo*ft$Gender, na.rm=TRUE, sqrt.dist=TRUE, permutations=99999,strata=factor(ft$Subject_ID))
+br_perm <- adonis(br_dist ~ft$PNA+ ft$Numbers.of.antibiotic+ ft$BIrth_GA+ ft$PROM+ ft$mo*ft$Gender, na.rm=TRUE, sqrt.dist=TRUE, permutations=999,strata=factor(ft$Subject_ID))
 br_perm
 
 
