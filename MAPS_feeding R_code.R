@@ -245,13 +245,13 @@ SPG3
 
 a.div.30$Feeding_type <- as.factor(a.div.30$mo)
 a.div.30$meansimp <- ave(a.div.30$simpson, by=list (a.div.30$Subject_ID,a.div.30$day), FUN= mean)
-fig1 <- ggplot(a.div.30,  aes( y=simpson, x=mo))+ #order=- makes the stack the same order as the legend
-  geom_boxplot(alpha=0.5, aes(fill = Feeding_type))+
+fig3 <- ggplot(a.div.30,  aes( y=simpson, x=mo))+ #order=- makes the stack the same order as the legend
+  geom_boxplot(alpha=0.5, aes(fill = Feeding_type, shape=factor(Feeding_type)))+
   scale_x_discrete()+
   labs(x="Feeding types", y="Gini-Simpson Diversity Index")+
   facet_grid(~day,shrink=T, space = "free")+
-  theme(axis.text.x = element_text(angle = 45), plot.background= element_rect(fill=NULL, colour = NULL))+theme_bw()
-fig1
+  theme(axis.text.x = element_text(angle = 45), plot.background= element_rect(fill=NULL, colour = NULL),legend.position = "none")
+fig3
 
 
 
@@ -326,9 +326,9 @@ order2 <- aggregate(value~variable+Fecal_Sample_ID+day+mo, data=order, FUN=mean)
 order3 <- order2[order(order2$variable, decreasing = TRUE),]
 feeding.plot3 <- ggplot(order3,  aes( y=as.numeric(value), x=factor(day), color=NULL, fill=factor(variable), order=-as.numeric(variable)))+ #order=- makes the stack the same order as the legend
   geom_bar(position="fill", stat="identity")+
-  scale_fill_manual(values=order.color)+
+  scale_fill_manual(values=order.color, name="Key")+
   scale_x_discrete()+
-  labs(x="Feeding types (number of specimens)", y="Relative abundance %")+
+  labs(x="Time intervals within feeding type", y="Order-level of bacteria (Relative abundance %)")+ 
   facet_grid(~mo,shrink=T, space = "free")+
   theme(axis.text.x = element_text(angle = 45))#+
 #theme_bw()
@@ -389,9 +389,9 @@ str(ord)
 ord2$PNA <- as.numeric(as.character(ord2$PNA))
 fig2 <- ggplot(ord2,  aes( y=as.numeric(value), x=factor(PNA), color=NULL, fill=factor(variable), order=-as.numeric(variable)))+ #order=- makes the stack the same order as the legend
   geom_bar(position="fill", stat="identity")+
-  scale_fill_manual(values=order.color)+
+  scale_fill_manual(values=order.color, name="Key")+
   scale_x_discrete()+
-  xlab("Postnatal Age (day)")+ ylab("Relative abundance %")+
+  xlab("Postnatal age (day)")+ ylab("Order-level of bacteria (Relative abundance %)")+
   facet_wrap(~infant.rename,scales = "free_x",shrink=T,  ncol=2)+
   theme_bw()
 fig2
@@ -442,8 +442,9 @@ stat$Fecal_Sample_ID <- rownames(stat)
 stat.d <- inner_join(stat, ft)
 
 stat.d$color <- revalue(as.character(stat.d$mo), c("1.MOM"="red", "4. HDM"="purple", "5.Formula"="yellow", "2.MOM+HDM"="green", "3.MOM+Formula"="blue", "6.HDM+Formula"="black"))
-scatterplot3d(stat.d[,1:3], color=stat.d$color, main="1.MOM=red,4. HDM=purple, 5.Formula=yellow, 2.MOM+HDM=green, 3.MOM+Formula=blue, 6.HDM+Formula=black", pch=16, grid=TRUE, box=FALSE)
-
+stat.d$shape <- revalue(as.character(stat.d$mo), c("1.MOM"="15", "4. HDM"="17", "5.Formula"="16", "2.MOM+HDM"="12", "3.MOM+Formula"="14", "6.HDM+Formula"="25"))
+scatterplot3d(stat.d[,1:3], color=stat.d$color,  pch=as.numeric(stat.d$shape), grid=TRUE, box=FALSE)
+legend("topright", legend = levels(factor(stat.d$mo)), pch =  c (15,  12, 14, 17, 16, 25), col=c("red","green", "blue", "purple", "yellow", "black"), cex = 0.75)
 
 # Jaccard
 nms <- metaMDS(otu.f, dist="jaccard", k=3, trymax=800, wascores=TRUE, trymin=50)
